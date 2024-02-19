@@ -1,0 +1,129 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider     = "mongodb"
+  url          = env("DATABASE_URL")
+  relationMode = "prisma"
+}
+
+model User {
+  id              String            @id @default(auto()) @map("_id") @db.ObjectId
+  email           String            @unique
+  name            String?
+  address         String?
+  createdAt       DateTime?         @default(now())
+  phone           String?           @unique
+  avatar          String?
+  Work            Work[]
+  Comment         Comment[]
+  WorkRequest     WorkRequest[]
+  WorkImplementer WorkImplementer[]
+  password        String
+  role            Role              @default(USER)
+  WorkLog         WorkLog[]
+
+  @@map("users")
+}
+
+model Comment {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  content   String
+  createdAt DateTime @default(now())
+  createdBy User     @relation(fields: [userId], references: [id])
+  userId    String   @db.ObjectId
+  Work      Work?    @relation(fields: [workId], references: [id])
+  workId    String?  @db.ObjectId
+}
+
+enum WorkStatus {
+  IN_PROGRESS
+  COMPLETED
+  NEW
+  PAUSE
+  PENDING
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+enum WorkAccepStatus {
+  ACCEPTED
+  DECLINED
+  PENDING
+}
+
+model WorkRequest {
+  id                String           @id @default(auto()) @map("_id") @db.ObjectId
+  title             String
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  isCompleted       Boolean
+  createdBy         User             @relation(fields: [userId], references: [id])
+  userId            String           @db.ObjectId
+  WorkImplementer   WorkImplementer? @relation(fields: [workImplementerId], references: [id])
+  workImplementerId String?          @db.ObjectId
+}
+
+model WorkImplementer {
+  id       String          @id @default(auto()) @map("_id") @db.ObjectId
+  user     User            @relation(fields: [userId], references: [id])
+  userId   String          @unique @db.ObjectId
+  seen     Boolean         @default(false)
+  request  WorkRequest[]
+  Work     Work?           @relation(fields: [workId], references: [id])
+  workId   String?         @db.ObjectId
+  accepted WorkAccepStatus @default(PENDING)
+}
+
+model Work {
+  id          String            @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  description String
+  createdAt   DateTime          @default(now())
+  createdBy   User              @relation(fields: [userId], references: [id])
+  userId      String            @db.ObjectId
+  comments    Comment[]
+  status      WorkStatus        @default(NEW)
+  startTime   DateTime
+  endTime     DateTime
+  views       Int               @default(0)
+  implementer WorkImplementer[]
+  WorkLog     WorkLog[]
+
+  @@map("works")
+}
+
+model WorkLog {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  createdAt DateTime @default(now())
+  workId    String?  @db.ObjectId
+  work      Work?    @relation(fields: [workId], references: [id])
+  content   String
+  LOG_TYPE  LogType
+  userId    String?  @db.ObjectId
+  user      User?    @relation(fields: [userId], references: [id])
+
+  @@map("work_log")
+}
+
+enum LogType {
+  ACCEPTED_WORK
+  DECLINED_WORK
+  COMMENT
+  ADD_MEMBER
+  REMOVE_MEMBER
+  ADD_WORK_REQUEST
+  COMPLETED_WORK_REQUEST
+  COMPLETED_WORK
+  PAUSED_WORK
+  CREATED_WORK
+  CONTINUE_WORK
+  REQUEST_TO_COMPLETED
+}
