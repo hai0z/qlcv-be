@@ -1,6 +1,9 @@
 const prisma = require("@prisma/client");
-
+const jwt = require("jsonwebtoken");
 const db = new prisma.PrismaClient();
+const dotenv = require("dotenv");
+
+dotenv.config();
 
 module.exports = {
   login: async (email, password) => {
@@ -17,7 +20,11 @@ module.exports = {
         avatar: true,
       },
     });
-    return data;
+    if (data) {
+      return data;
+    } else {
+      throw new Error("Invalid email or password");
+    }
   },
   register: async (email, password) => {
     try {
@@ -26,11 +33,23 @@ module.exports = {
           email,
           password,
           address: "",
+          name: email.split("@")[0],
         },
       });
       return data;
     } catch (error) {
       throw new Error("Email already exists");
+    }
+  },
+  verifyToken: async (token) => {
+    if (!token) {
+      throw new Error("Token not found");
+    }
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      return decoded.data;
+    } catch (error) {
+      throw new Error("Invalid token");
     }
   },
 };

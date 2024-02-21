@@ -1,32 +1,36 @@
 const authService = require("../services/auth.service");
 const jwt = require("jsonwebtoken");
+const dotenv = require("dotenv");
+
+dotenv.config();
 
 module.exports = {
   login: async (req, res) => {
     const { email, password } = req.body;
-    const data = await authService.login(email, password);
-    if (data) {
-      const token = jwt.sign(
-        {
-          data,
-        },
-        "secret",
-        { expiresIn: "30d" }
-      );
-      res.cookie("user", data);
-      res.cookie("token", token);
-      res.status(200).json({
-        message: "Login successfully",
-        data: data,
-        token: token,
-      });
-    } else {
-      res.status(400).json({ message: "Invalid email or password" });
+    console.log(req.body);
+    try {
+      const data = await authService.login(email, password);
+      if (data) {
+        const token = jwt.sign(
+          {
+            data,
+          },
+          process.env.JWT_SECRET,
+          { expiresIn: "30d" }
+        );
+        res.cookie("token", token);
+        res.status(200).json({
+          message: "Login successfully",
+          data: data,
+          token: token,
+        });
+      }
+    } catch (error) {
+      res.status(400).json({ message: error.message });
     }
   },
 
   logOut: async (_req, res) => {
-    res.clearCookie("user");
     res.clearCookie("token");
     res.status(200).json({ message: "Logout successfully" });
   },
@@ -43,6 +47,15 @@ module.exports = {
         message: "Register successfully",
         data: rest,
       });
+    } catch (error) {
+      res.status(400).json({ message: error.message });
+    }
+  },
+  verifyToken: async (req, res) => {
+    try {
+      const token = req.cookies.token;
+      const data = await authService.verifyToken(token);
+      res.status(200).json({ message: "Token verified", data });
     } catch (error) {
       res.status(400).json({ message: error.message });
     }

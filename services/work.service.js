@@ -3,6 +3,65 @@ const dayjs = require("dayjs");
 
 const db = new prisma.PrismaClient();
 
+const selectUserFields = {
+  id: true,
+  name: true,
+  avatar: true,
+  role: true,
+};
+
+const commentCondition = {
+  include: {
+    createdBy: {
+      select: selectUserFields,
+    },
+  },
+};
+
+const implementerCondition = {
+  where: {
+    accepted: {
+      not: "DECLINED",
+    },
+  },
+  include: {
+    request: {
+      include: {
+        createdBy: {
+          select: selectUserFields,
+        },
+      },
+    },
+    user: {
+      select: selectUserFields,
+    },
+  },
+};
+
+const implementerWhere = (user) => ({
+  OR: [
+    {
+      implementer: {
+        some: {
+          AND: [
+            {
+              userId: user.id,
+            },
+            {
+              accepted: {
+                not: "DECLINED",
+              },
+            },
+          ],
+        },
+      },
+    },
+    {
+      userId: user.id,
+    },
+  ],
+});
+
 module.exports = {
   createWork: async (work, user) => {
     const data = await db.work.create({
@@ -15,100 +74,72 @@ module.exports = {
     return data.id;
   },
 
-  getAllWork: async (user, page = 1) => {
-    const ITEMS_PER_PAGE = 5;
-
-    const workCount = await db.work.count();
-
+  getAllWork: async (user, page = 1, limit = 5) => {
     if (user.role === "ADMIN") {
+      const workCount = await db.work.count();
       const data = await db.work.findMany({
         include: {
-          comments: { include: { createdBy: true } },
-          createdBy: true,
-          implementer: {
-            where: {
-              accepted: {
-                not: "DECLINED",
-              },
-            },
-            include: {
-              request: {
-                include: {
-                  createdBy: true,
-                },
-              },
-              user: true,
-              Work: true,
-            },
+          comments: commentCondition,
+          createdBy: {
+            select: selectUserFields,
           },
+          implementer: implementerCondition,
         },
         orderBy: {
           createdAt: "desc",
         },
-        take: ITEMS_PER_PAGE,
-        skip: ITEMS_PER_PAGE * (page - 1),
+        take: Number(limit),
+        skip: Number(limit) * (page - 1),
       });
       return {
         data,
-        totalPage: Math.ceil(workCount / ITEMS_PER_PAGE),
+        totalPage: Math.ceil(workCount / Number(limit)),
       };
     } else {
+      const workCount = await db.work.count({
+        where: implementerWhere,
+      });
       const data = await db.work.findMany({
         include: {
-          comments: { include: { createdBy: true } },
-          createdBy: true,
-          implementer: {
-            where: {
-              accepted: {
-                not: "DECLINED",
-              },
-            },
-            include: {
-              request: {
-                include: {
-                  createdBy: true,
-                },
-              },
-              user: true,
-              Work: true,
-            },
+          comments: commentCondition,
+          createdBy: {
+            select: selectUserFields,
           },
+          implementer: implementerCondition,
         },
         orderBy: {
           createdAt: "desc",
         },
-        where: {
-          OR: [
-            {
-              implementer: {
-                some: {
-                  AND: [
-                    {
-                      userId: user.id,
-                    },
-                    {
-                      accepted: {
-                        not: "DECLINED",
-                      },
-                    },
-                  ],
-                },
-              },
-            },
-            {
-              userId: user.id,
-            },
-          ],
-        },
-        take: ITEMS_PER_PAGE,
-        skip: (page - 1) * ITEMS_PER_PAGE,
+        where: implementerWhere(user),
+        take: Number(limit),
+        skip: (page - 1) * Number(limit),
       });
       return {
         data,
-        totalPage: Math.ceil(workCount / ITEMS_PER_PAGE),
+        totalPage: Math.ceil(workCount / Number(limit)),
       };
     }
   },
+
+  getWorkCalender: async (user) => {
+    if (user.role === "ADMIN") {
+      const data = await db.work.findMany({
+        orderBy: {
+          createdAt: "desc",
+        },
+      });
+      data;
+    } else {
+      const data = await db.work.findMany({
+        orderBy: {
+          createdAt: "desc",
+        },
+        where: implementerWhere(user),
+      });
+      return data;
+    }
+  },
+
   getWorkById: async (workId, user) => {
     try {
       const data = await db.work.findUnique({
@@ -121,23 +152,11 @@ module.exports = {
           },
         },
         include: {
-          comments: { include: { createdBy: true } },
-          createdBy: true,
-          implementer: {
-            where: {
-              accepted: {
-                not: "DECLINED",
-              },
-            },
-            include: {
-              request: {
-                include: {
-                  createdBy: true,
-                },
-              },
-              user: true,
-            },
+          comments: commentCondition,
+          createdBy: {
+            select: selectUserFields,
           },
+          implementer: implementerCondition,
         },
       });
       return data;
