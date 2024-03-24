@@ -12,20 +12,23 @@ datasource db {
 }
 
 model User {
-  id              String            @id @default(auto()) @map("_id") @db.ObjectId
-  email           String            @unique
-  name            String?
-  address         String?
-  createdAt       DateTime?         @default(now())
-  phone           String?           @unique
-  avatar          String?
-  Work            Work[]
-  Comment         Comment[]
-  WorkRequest     WorkRequest[]
-  WorkImplementer WorkImplementer[]
-  password        String
-  role            Role              @default(USER)
-  WorkLog         WorkLog[]
+  id                    String            @id @default(auto()) @map("_id") @db.ObjectId
+  email                 String            @unique
+  name                  String?
+  address               String?
+  createdAt             DateTime?         @default(now())
+  phone                 String?           @unique
+  avatar                String?
+  password              String
+  updatedAt             DateTime?         @updatedAt
+  Work                  Work[]
+  Comment               Comment[]
+  WorkRequest           WorkRequest[]
+  WorkImplementer       WorkImplementer[]
+  role                  Role              @default(USER)
+  WorkLog               WorkLog[]
+  notificationsReceived Notification[]    @relation("UserToNotification")
+  notificationsSent     Notification[]    @relation("SenderToNotification")
 
   @@map("users")
 }
@@ -40,41 +43,10 @@ model Comment {
   workId    String?  @db.ObjectId
 }
 
-enum WorkStatus {
-  IN_PROGRESS
-  COMPLETED
-  NEW
-  PAUSE
-  PENDING
-}
-
-enum Role {
-  ADMIN
-  USER
-}
-
-enum WorkAccepStatus {
-  ACCEPTED
-  DECLINED
-  PENDING
-}
-
-model WorkRequest {
-  id                String           @id @default(auto()) @map("_id") @db.ObjectId
-  title             String
-  createdAt         DateTime         @default(now())
-  updatedAt         DateTime         @updatedAt
-  isCompleted       Boolean
-  createdBy         User             @relation(fields: [userId], references: [id])
-  userId            String           @db.ObjectId
-  WorkImplementer   WorkImplementer? @relation(fields: [workImplementerId], references: [id])
-  workImplementerId String?          @db.ObjectId
-}
-
 model WorkImplementer {
   id       String          @id @default(auto()) @map("_id") @db.ObjectId
-  user     User            @relation(fields: [userId], references: [id])
-  userId   String          @unique @db.ObjectId
+  user     User?           @relation(fields: [userId], references: [id])
+  userId   String?         @unique @db.ObjectId
   seen     Boolean         @default(false)
   request  WorkRequest[]
   Work     Work?           @relation(fields: [workId], references: [id])
@@ -100,6 +72,18 @@ model Work {
   @@map("works")
 }
 
+model WorkRequest {
+  id                String           @id @default(auto()) @map("_id") @db.ObjectId
+  title             String
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  isCompleted       Boolean
+  createdBy         User             @relation(fields: [userId], references: [id])
+  userId            String           @db.ObjectId
+  WorkImplementer   WorkImplementer? @relation(fields: [workImplementerId], references: [id])
+  workImplementerId String?          @db.ObjectId
+}
+
 model WorkLog {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   createdAt DateTime @default(now())
@@ -111,6 +95,37 @@ model WorkLog {
   user      User?    @relation(fields: [userId], references: [id])
 
   @@map("work_log")
+}
+
+model Notification {
+  notification_id String   @id @default(auto()) @map("_id") @db.ObjectId
+  receiverId      String   @db.ObjectId
+  senderId        String   @db.ObjectId
+  message         String
+  timestamp       DateTime @default(now())
+  receiver        User     @relation("UserToNotification", fields: [receiverId], references: [id])
+  sender          User     @relation("SenderToNotification", fields: [senderId], references: [id])
+  workId          String
+  isRead          Boolean  @default(false)
+}
+
+enum WorkStatus {
+  IN_PROGRESS
+  COMPLETED
+  NEW
+  PAUSE
+  PENDING
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+enum WorkAccepStatus {
+  ACCEPTED
+  DECLINED
+  PENDING
 }
 
 enum LogType {

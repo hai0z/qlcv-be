@@ -16,6 +16,9 @@ const commentCondition = {
       select: selectUserFields,
     },
   },
+  orderBy: {
+    createdAt: "desc",
+  },
 };
 
 const implementerCondition = {
@@ -26,6 +29,9 @@ const implementerCondition = {
   },
   include: {
     request: {
+      orderBy: {
+        createdAt: "desc",
+      },
       include: {
         createdBy: {
           select: selectUserFields,
@@ -62,16 +68,63 @@ const implementerWhere = (user) => ({
   ],
 });
 
-module.exports = {
+module.exports.writeWorkLog = async (userId, workId, type) => {
+  const getLogType = () => {
+    switch (type) {
+      case "ACCEPTED_WORK":
+        return "chấp nhận công việc";
+      case "ADD_WORK_REQUEST":
+        return "thêm yêu cầu cho công việc";
+      case "ADD_MEMBER":
+        return "thêm người thực hiện công việc";
+      case "COMMENT":
+        return "thêm 1 bình luận";
+      case "CREATED_WORK":
+        return "tạo mới 1 công việc";
+      case "DECLINED_WORK":
+        return "từ chối công việc";
+      case "PAUSED_WORK":
+        return "chuyển trạng thái công việc sang tạm dừng";
+      case "COMPLETED_WORK":
+        return "chuyển trạng thái công việc sang hoàn thành";
+      case "COMPLETED_WORK_REQUEST":
+        return "hoàn thành 1 yêu cầu của công việc";
+      case "REMOVE_MEMBER":
+        return "xoá người thực hiện khỏi công việc";
+      case "CONTINUE_WORK":
+        return "chuyển trạng thái công việc sang đang thực hiện";
+      case "REQUEST_TO_COMPLETED":
+        return "gửi yêu cầu duyệt công việc";
+    }
+  };
+  const user = await db.user.findUnique({
+    where: {
+      id: userId,
+    },
+  });
+  await db.workLog.create({
+    data: {
+      userId,
+      workId,
+      LOG_TYPE: type,
+      content: `${user?.name} đã ${getLogType()}`,
+    },
+  });
+};
+module.exports.workService = {
   createWork: async (work, user) => {
-    const data = await db.work.create({
-      data: {
-        ...work,
-        userId: user.id,
-      },
-    });
-    writeWorkLog(user.id, data.id, "CREATED_WORK");
-    return data.id;
+    try {
+      const data = await db.work.create({
+        data: {
+          ...work,
+          userId: user.id,
+        },
+      });
+      this.writeWorkLog(user.id, data.id, "CREATED_WORK");
+      return data.id;
+    } catch (error) {
+      throw new Error(error);
+    }
   },
 
   getAllWork: async (user, page = 1, limit = 5) => {
@@ -97,7 +150,7 @@ module.exports = {
       };
     } else {
       const workCount = await db.work.count({
-        where: implementerWhere,
+        where: implementerWhere(user),
       });
       const data = await db.work.findMany({
         include: {
@@ -121,7 +174,7 @@ module.exports = {
     }
   },
 
-  getWorkCalender: async (user) => {
+  getWorkCalendar: async (user) => {
     if (user.role === "ADMIN") {
       const data = await db.work.findMany({
         orderBy: {
@@ -145,16 +198,28 @@ module.exports = {
       const data = await db.work.findUnique({
         where: {
           id: workId,
-          implementer: {
-            some: {
+          OR: [
+            {
               userId: user.id,
             },
-          },
+            {
+              implementer: {
+                some: {
+                  id: user.id,
+                },
+              },
+            },
+          ],
         },
         include: {
           comments: commentCondition,
           createdBy: {
             select: selectUserFields,
+          },
+          WorkLog: {
+            orderBy: {
+              createdAt: "desc",
+            },
           },
           implementer: implementerCondition,
         },
@@ -165,17 +230,33 @@ module.exports = {
     }
   },
 
-  updateWorkView: async (workId) => {
-    await db.work.update({
-      where: {
-        id: workId,
-      },
-      data: {
-        views: {
-          increment: 1,
-        },
-      },
+  getProgressChart: async (user) => {
+    const getWorkProgress = (data) => ({
+      inProgress: data.filter((work) => work.status === "IN_PROGRESS").length,
+      completed: data.filter((work) => work.status === "COMPLETED").length,
+      pause: data.filter((work) => work.status === "PAUSE").length,
+      pending: data.filter((work) => work.status === "PENDING").length,
+      new: data.filter((work) => work.status === "NEW").length,
     });
+    if (user.role === "ADMIN") {
+      const workCount = await db.work.count();
+      const data = await db.work.findMany();
+      return {
+        data: getWorkProgress(data),
+        totalWork: workCount,
+      };
+    } else {
+      const workCount = await db.work.count({
+        where: implementerWhere(user),
+      });
+      const data = await db.work.findMany({
+        where: implementerWhere(user),
+      });
+      return {
+        data: getWorkProgress(data),
+        totalWork: workCount,
+      };
+    }
   },
 
   getTodayWork: async (user) => {
@@ -189,39 +270,22 @@ module.exports = {
         },
         OR: [
           {
-            implementer: {
-              some: {
-                AND: [
-                  {
-                    userId: user.id,
-                  },
-                  {
-                    accepted: {
-                      not: "DECLINED",
-                    },
-                  },
-                ],
-              },
-            },
+            userId: user.id,
           },
           {
-            userId: user.id,
+            implementer: {
+              some: {
+                id: user.id,
+              },
+            },
           },
         ],
       },
       include: {
         createdBy: {
-          select: {
-            avatar: true,
-            name: true,
-          },
+          select: selectUserFields,
         },
         implementer: {
-          where: {
-            accepted: {
-              not: "DECLINED",
-            },
-          },
           include: {
             request: true,
           },
@@ -249,7 +313,7 @@ module.exports = {
         accepted: "ACCEPTED",
       },
     });
-    writeWorkLog(userId, workId, "ACCEPTED_WORK");
+    this.writeWorkLog(userId, workId, "ACCEPTED_WORK");
   },
 
   declineWork: async (workId, userId) => {
@@ -259,63 +323,78 @@ module.exports = {
         workId,
       },
     });
-    writeWorkLog(userId, workId, "DECLINED_WORK");
+    this.writeWorkLog(userId, workId, "DECLINED_WORK");
   },
-
-  writeWorkLog: async (userId, workId, type) => {
-    const getLogType = () => {
-      switch (type) {
-        case "ACCEPTED_WORK":
-          return "chấp nhận công việc";
-        case "ADD_WORK_REQUEST":
-          return "thêm yêu cầu cho công việc";
-        case "ADD_MEMBER":
-          return "thêm người thực hiện công việc";
-        case "COMMENT":
-          return "thêm 1 bình luận";
-        case "CREATED_WORK":
-          return "tạo mới 1 công việc";
-        case "DECLINED_WORK":
-          return "từ chối công việc";
-        case "PAUSED_WORK":
-          return "chuyển trạng thái công việc sang tạm dừng";
-        case "COMPLETED_WORK":
-          return "chuyển trạng thái công việc sang hoàn thành";
-        case "COMPLETED_WORK_REQUEST":
-          return "hoàn thành 1 yêu cầu của công việc";
-        case "REMOVE_MEMBER":
-          return "xoá người thực hiện khỏi công việc";
-        case "CONTINUE_WORK":
-          return "chuyển trạng thái công việc sang đang thực hiện";
-        case "REQUEST_TO_COMPLETED":
-          return "gửi yêu cầu duyệt công việc";
+  addMemberToWork: async (workId, userId) => {
+    try {
+      const work = await db.work.findUnique({
+        where: {
+          id: workId,
+        },
+      });
+      if (!work) {
+        throw new Error("Work not found");
       }
-    };
-    const user = await db.user.findUnique({
+      const userHasInWork = await db.workImplementer.findUnique({
+        where: {
+          workId,
+          userId,
+        },
+      });
+      if (userHasInWork) {
+        throw new Error("User already in work");
+      }
+      await db.workImplementer.create({
+        data: {
+          workId,
+          userId,
+        },
+      });
+    } catch (error) {
+      throw new Error(error.message);
+    }
+  },
+  removeMemberToWork: async (workId, userId) => {
+    const userHasInWork = await db.workImplementer.findUnique({
       where: {
-        id: userId,
+        workId,
+        userId,
       },
     });
-    await db.workLog.create({
+    if (!userHasInWork) {
+      throw new Error("User not in work");
+    }
+    try {
+      await db.workImplementer.deleteMany({
+        where: {
+          workId,
+          userId,
+        },
+      });
+    } catch (error) {
+      throw new Error(error.message);
+    }
+  },
+  createWorkRequest: async (title, workImplementerId, userId) => {
+    await db.workRequest.create({
       data: {
         userId,
-        workId,
-        LOG_TYPE: type,
-        content: `${user?.name} đã ${getLogType()}`,
+        title,
+        isCompleted: false,
+        workImplementerId,
       },
     });
   },
-
-  getWorkLog: async (workId) => {
-    const data = await db.workLog.findMany({
+  updateWorkRequest: async (workRequestId, data, user) => {
+    await db.workRequest.updateMany({
       where: {
-        workId,
+        id: workRequestId,
       },
-      orderBy: {
-        createdAt: "desc",
+      data: {
+        ...data,
+        userId: user.id,
       },
     });
-    return data;
   },
 
   updateWorkStatus: async (workId, status, user) => {
@@ -329,16 +408,16 @@ module.exports = {
     });
     switch (status) {
       case "COMPLETED":
-        writeWorkLog(user.id, workId, "COMPLETED_WORK");
+        this.writeWorkLog(user.id, workId, "COMPLETED_WORK");
         break;
       case "PAUSE":
-        writeWorkLog(user.id, workId, "PAUSED_WORK");
+        this.writeWorkLog(user.id, workId, "PAUSED_WORK");
         break;
       case "IN_PROGRESS":
-        writeWorkLog(user.id, workId, "CONTINUE_WORK");
+        this.writeWorkLog(user.id, workId, "CONTINUE_WORK");
         break;
       case "PENDING":
-        writeWorkLog(user.id, workId, "REQUEST_TO_COMPLETED");
+        this.writeWorkLog(user.id, workId, "REQUEST_TO_COMPLETED");
         break;
     }
   },
@@ -349,6 +428,25 @@ module.exports = {
       },
       data: {
         ...work,
+      },
+    });
+  },
+  updateWorkView: async (workId) => {
+    await db.work.update({
+      where: {
+        id: workId,
+      },
+      data: {
+        views: {
+          increment: 1,
+        },
+      },
+    });
+  },
+  deleteWorkRequest: async (workRequestId) => {
+    await db.workRequest.delete({
+      where: {
+        id: workRequestId,
       },
     });
   },

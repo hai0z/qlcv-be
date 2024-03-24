@@ -16,19 +16,19 @@ module.exports = {
       });
       writeWorkLog(user.id, workId, "COMMENT");
     } catch (error) {
-      throw new Error("Something went wrong");
+      throw new Error(error.message);
     }
   },
 
   deleteComment: async (commentId) => {
     try {
-      await prisma.comment.delete({
+      await db.comment.delete({
         where: {
           id: commentId,
         },
       });
     } catch (error) {
-      throw new Error("Something went wrong");
+      throw new Error(error.message);
     }
   },
 };

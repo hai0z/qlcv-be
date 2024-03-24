@@ -3,11 +3,10 @@ const jwt = require("jsonwebtoken");
 const dotenv = require("dotenv");
 
 dotenv.config();
-
+const COOKIE_AGE = 30 * 24 * 60 * 60 * 1000;
 module.exports = {
   login: async (req, res) => {
     const { email, password } = req.body;
-    console.log(req.body);
     try {
       const data = await authService.login(email, password);
       if (data) {
@@ -18,7 +17,10 @@ module.exports = {
           process.env.JWT_SECRET,
           { expiresIn: "30d" }
         );
-        res.cookie("token", token);
+        res.cookie("token", token, {
+          httpOnly: true,
+          maxAge: COOKIE_AGE,
+        });
         res.status(200).json({
           message: "Login successfully",
           data: data,

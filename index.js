@@ -1,5 +1,6 @@
 const express = require("express");
 const cookieParser = require("cookie-parser");
+const authMiddleware = require("./middlewares/auth.middleware");
 const cors = require("cors");
 
 const app = express();
@@ -12,25 +13,21 @@ app.use(
 );
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-app.use(cookieParser());
+app.use(cookieParser("secret"));
 
-app.get("/", (req, res) => {
-  res.json({ message: "Hello World!" });
+app.get("/", (_, res) => {
+  res.json({ message: "Hello" });
 });
 
+app.use("/work", authMiddleware, require("./routes/work.route"));
 app.use(
-  "/work",
-  [require("./middlewares/auth.middleware")],
-  require("./routes/work.route")
+  "/notification",
+  authMiddleware,
+  require("./routes/notification.route")
 );
-
 app.use("/auth", require("./routes/auth.route"));
 
-app.use(
-  "/comment",
-  [require("./middlewares/auth.middleware")],
-  require("./routes/comment.route")
-);
+app.use("/comment", authMiddleware, require("./routes/comment.route"));
 
 app.listen(3000, () => {
   console.log("server is running on http://localhost:3000");
