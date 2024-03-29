@@ -5,6 +5,7 @@ module.exports = {
   //get
   getAllWork: async (req, res) => {
     const user = req.user;
+    console.log(user);
     let { page, limit } = req.query;
     if (!page) page = 1;
     if (!limit) limit = 5;
