@@ -75,7 +75,7 @@ module.exports = {
     const { id: workId } = req.params;
     const user = req.user;
     try {
-      await workService.addMemberToWork(id, userId);
+      await workService.addMemberToWork(workId, userId);
       await notificationService.createNotification(
         user.id,
         userId,
