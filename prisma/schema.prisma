@@ -105,7 +105,7 @@ model Notification {
   timestamp       DateTime @default(now())
   receiver        User     @relation("UserToNotification", fields: [receiverId], references: [id])
   sender          User     @relation("SenderToNotification", fields: [senderId], references: [id])
-  workId          String
+  workId          String?
   isRead          Boolean  @default(false)
 }
 

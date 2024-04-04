@@ -73,6 +73,7 @@ module.exports = {
   },
   addMember: async (req, res) => {
     const { userId } = req.body;
+    console.log({ userId });
     const { id: workId } = req.params;
     const user = req.user;
     try {

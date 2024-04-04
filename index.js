@@ -29,6 +29,7 @@ app.use("/auth", require("./routes/auth.route"));
 
 app.use("/comment", authMiddleware, require("./routes/comment.route"));
 
+app.use("/user", authMiddleware, require("./routes/user.route"));
 app.listen(3000, () => {
   console.log("server is running on http://localhost:3000");
 });

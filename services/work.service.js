@@ -2,7 +2,6 @@ const prisma = require("@prisma/client");
 const dayjs = require("dayjs");
 
 const db = new prisma.PrismaClient();
-const x = {};
 const selectUserFields = {
   id: true,
   name: true,
@@ -296,11 +295,40 @@ module.exports.workService = {
   },
 
   deleteWork: async (workId) => {
-    await db.work.delete({
-      where: {
-        id: workId,
-      },
-    });
+    try {
+      await db.work.delete({
+        where: {
+          id: workId,
+        },
+      });
+      await db.workImplementer.deleteMany({
+        where: {
+          workId: null,
+        },
+      });
+      await db.workRequest.deleteMany({
+        where: {
+          workImplementerId: null,
+        },
+      });
+      await db.workLog.deleteMany({
+        where: {
+          workId: null,
+        },
+      });
+      await db.comment.deleteMany({
+        where: {
+          workId: null,
+        },
+      });
+      await db.notification.deleteMany({
+        where: {
+          workId: workId,
+        },
+      });
+    } catch (error) {
+      throw new Error(error.message);
+    }
   },
 
   acceptWork: async (workId, userId) => {
@@ -335,19 +363,10 @@ module.exports.workService = {
       if (!work) {
         throw new Error("Work not found");
       }
-      const userHasInWork = await db.workImplementer.findUnique({
-        where: {
-          workId,
-          userId,
-        },
-      });
-      if (userHasInWork) {
-        throw new Error("User already in work");
-      }
       await db.workImplementer.create({
         data: {
-          workId,
           userId,
+          workId,
         },
       });
     } catch (error) {
