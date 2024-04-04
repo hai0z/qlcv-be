@@ -77,13 +77,15 @@ module.exports = {
     const { id: workId } = req.params;
     const user = req.user;
     try {
-      await workService.addMemberToWork(workId, userId);
-      await notificationService.createNotification(
-        user.id,
-        userId,
-        workId,
-        "đã thêm bạn vào một công việc"
-      );
+      await workService.addMemberToWork(workId, userId, user);
+      if (userId !== user.id) {
+        await notificationService.createNotification(
+          user.id,
+          userId,
+          workId,
+          "đã thêm bạn vào một công việc"
+        );
+      }
       res.status(200).json({ message: "Member added successfully" });
     } catch (error) {
       res.status(400).json({ message: error.message });

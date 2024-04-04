@@ -37,7 +37,7 @@ model Comment {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   content   String
   createdAt DateTime @default(now())
-  createdBy User     @relation(fields: [userId], references: [id])
+  createdBy User?    @relation(fields: [userId], references: [id])
   userId    String   @db.ObjectId
   Work      Work?    @relation(fields: [workId], references: [id])
   workId    String?  @db.ObjectId
@@ -46,7 +46,7 @@ model Comment {
 model WorkImplementer {
   id       String          @id @default(auto()) @map("_id") @db.ObjectId
   user     User?           @relation(fields: [userId], references: [id])
-  userId   String?         @unique @db.ObjectId
+  userId   String?         @db.ObjectId
   seen     Boolean         @default(false)
   request  WorkRequest[]
   Work     Work?           @relation(fields: [workId], references: [id])

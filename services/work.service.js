@@ -353,7 +353,7 @@ module.exports.workService = {
     });
     this.writeWorkLog(userId, workId, "DECLINED_WORK");
   },
-  addMemberToWork: async (workId, userId) => {
+  addMemberToWork: async (workId, userId, user) => {
     try {
       const work = await db.work.findUnique({
         where: {
@@ -367,6 +367,7 @@ module.exports.workService = {
         data: {
           userId,
           workId,
+          accepted: user.id === userId ? "ACCEPTED" : "PENDING",
         },
       });
     } catch (error) {
