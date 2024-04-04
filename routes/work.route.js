@@ -27,10 +27,12 @@ router.put("/:id", workController.updateWork);
 
 //DELETE
 router.delete("/remove-member/:id", workController.removeMember);
+
 router.delete(
   "/delete-work-request/:workRequestId",
   workController.deleteWorkRequest
 );
+
 router.delete("/:id", workController.deleteWork);
 
 module.exports = router;

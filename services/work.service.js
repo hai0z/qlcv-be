@@ -375,20 +375,17 @@ module.exports.workService = {
     }
   },
   removeMemberToWork: async (workId, userId) => {
-    const userHasInWork = await db.workImplementer.findUnique({
-      where: {
-        workId,
-        userId,
-      },
-    });
-    if (!userHasInWork) {
-      throw new Error("User not in work");
-    }
     try {
       await db.workImplementer.deleteMany({
         where: {
-          workId,
-          userId,
+          AND: [
+            {
+              userId,
+            },
+            {
+              workId,
+            },
+          ],
         },
       });
     } catch (error) {
@@ -441,13 +438,13 @@ module.exports.workService = {
         break;
     }
   },
-  updateWork: async (workId, work) => {
+  updateWork: async (workId, data) => {
     await db.work.update({
       where: {
         id: workId,
       },
       data: {
-        ...work,
+        ...data,
       },
     });
   },

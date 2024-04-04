@@ -38,7 +38,6 @@ module.exports = {
   },
   getProgressChart: async (req, res) => {
     const user = req.user;
-    console.log(user);
     try {
       const data = await workService.getProgressChart(user);
       res.status(200).json(data);
@@ -73,7 +72,6 @@ module.exports = {
   },
   addMember: async (req, res) => {
     const { userId } = req.body;
-    console.log({ userId });
     const { id: workId } = req.params;
     const user = req.user;
     try {
@@ -94,10 +92,11 @@ module.exports = {
   removeMember: async (req, res) => {
     const { userId } = req.body;
     const { id: workId } = req.params;
+    console.log({ userId });
+
     const user = req.user;
-    console.log(id, userId);
     try {
-      await workService.removeMemberToWork(id, userId);
+      await workService.removeMemberToWork(workId, userId);
       await notificationService.createNotification(
         user.id,
         userId,
@@ -131,8 +130,8 @@ module.exports = {
   //put
   updateWork: async (req, res) => {
     const { id } = req.params;
-    const { work } = req.body;
-    await workService.updateWork(id, work);
+    const { data } = req.body;
+    await workService.updateWork(id, data);
     res.status(200).json({ message: "Work updated successfully" });
   },
   updateWorkStatus: async (req, res) => {
