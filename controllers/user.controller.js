@@ -19,7 +19,8 @@ module.exports = {
     }
   },
   createUser: async (req, res) => {
-    const data = req.body;
+    const { data } = req.body;
+    // console.log(data);
     try {
       const user = await userService.createUser(data);
       res.status(200).json(user);

@@ -27,7 +27,7 @@ module.exports = {
     }
   },
   createUser: async (data) => {
-    const { email, password, name, address, phone } = data;
+    const { email, phone } = data;
     try {
       const checkEmail = await db.user.findUnique({
         where: {
@@ -35,7 +35,7 @@ module.exports = {
         },
       });
       if (checkEmail) {
-        throw new Error("User already exists");
+        throw new Error("Email already exists");
       }
       const checkPhone = await db.user.findUnique({
         where: {
