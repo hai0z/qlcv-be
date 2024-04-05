@@ -11,11 +11,11 @@ module.exports = {
       throw new Error(error.message);
     }
   },
-  getUserByEmail: async (email) => {
+  getUserById: async (id) => {
     try {
       const user = await db.user.findUnique({
         where: {
-          email,
+          id,
         },
       });
       if (!user) {

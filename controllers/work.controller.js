@@ -1,11 +1,11 @@
 const notificationService = require("../services/notification.service");
+const userService = require("../services/user.service");
 const { workService, writeWorkLog } = require("../services/work.service");
 
 module.exports = {
   //get
   getAllWork: async (req, res) => {
     const user = req.user;
-    console.log(user);
     let { page, limit } = req.query;
     if (!page) page = 1;
     if (!limit) limit = 5;
@@ -37,7 +37,9 @@ module.exports = {
     res.status(200).json(data);
   },
   getProgressChart: async (req, res) => {
-    const user = req.user;
+    const { userId } = req.params;
+    const user = await userService.getUserById(userId);
+    console.log({ user });
     try {
       const data = await workService.getProgressChart(user);
       res.status(200).json(data);

@@ -9,7 +9,7 @@ const workController = require("../controllers/work.controller");
 router.get("/", workController.getAllWork);
 router.get("/today", workController.getTodayWork);
 router.get("/calendar", workController.getWorkCalendar);
-router.get("/chart", workController.getProgressChart);
+router.get("/chart/:userId", workController.getProgressChart);
 router.get("/:id", workController.getWorkById);
 
 //POST
