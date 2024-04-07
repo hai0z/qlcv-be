@@ -41,7 +41,7 @@ module.exports = {
     const user = await userService.getUserById(userId);
     console.log({ user });
     try {
-      const data = await workService.getProgressChart(user);
+      const data = await workService.getProgressChart(user, null, null);
       res.status(200).json(data);
     } catch (error) {
       res.status(400).json({ message: error.message });
@@ -115,7 +115,8 @@ module.exports = {
     const { title, workImplementerId, userId } = req.body;
     const { id: workId } = req.params;
     try {
-      await workService.createWorkRequest(title, workImplementerId, userId);
+      await workService.createWorkRequest(title, workImplementerId, user.id);
+
       await writeWorkLog(user.id, workId, "ADD_WORK_REQUEST");
       await notificationService.createNotification(
         user.id,

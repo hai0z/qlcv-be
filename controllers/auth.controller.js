@@ -9,10 +9,11 @@ module.exports = {
     const { email, password } = req.body;
     try {
       const data = await authService.login(email, password);
+      const { avatar, ...rest } = data;
       if (data) {
         const token = jwt.sign(
           {
-            data,
+            data: rest,
           },
           process.env.JWT_SECRET,
           { expiresIn: "30d" }
@@ -23,7 +24,7 @@ module.exports = {
         });
         res.status(200).json({
           message: "Login successfully",
-          data: data,
+          data,
           token: token,
         });
       }

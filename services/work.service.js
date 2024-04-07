@@ -180,7 +180,7 @@ module.exports.workService = {
           createdAt: "desc",
         },
       });
-      data;
+      return data;
     } else {
       const data = await db.work.findMany({
         orderBy: {
@@ -194,6 +194,26 @@ module.exports.workService = {
 
   getWorkById: async (workId, user) => {
     try {
+      if (user.role === "ADMIN") {
+        const data = await db.work.findUnique({
+          where: {
+            id: workId,
+          },
+          include: {
+            comments: commentCondition,
+            createdBy: {
+              select: selectUserFields,
+            },
+            WorkLog: {
+              orderBy: {
+                createdAt: "desc",
+              },
+            },
+            implementer: implementerCondition,
+          },
+        });
+        return data;
+      }
       const data = await db.work.findUnique({
         where: {
           id: workId,
@@ -204,7 +224,7 @@ module.exports.workService = {
             {
               implementer: {
                 some: {
-                  id: user.id,
+                  userId: user.id,
                 },
               },
             },
@@ -237,6 +257,7 @@ module.exports.workService = {
       pending: data.filter((work) => work.status === "PENDING").length,
       new: data.filter((work) => work.status === "NEW").length,
     });
+
     if (user.role === "ADMIN") {
       const workCount = await db.work.count();
       const data = await db.work.findMany();
@@ -386,6 +407,11 @@ module.exports.workService = {
               workId,
             },
           ],
+        },
+      });
+      await db.workRequest.deleteMany({
+        where: {
+          workImplementerId: null,
         },
       });
     } catch (error) {
