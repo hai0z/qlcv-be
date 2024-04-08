@@ -1,7 +1,6 @@
 const authService = require("../services/auth.service");
 const jwt = require("jsonwebtoken");
 const dotenv = require("dotenv");
-
 dotenv.config();
 const COOKIE_AGE = 30 * 24 * 60 * 60 * 1000;
 module.exports = {

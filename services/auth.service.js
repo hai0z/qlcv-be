@@ -2,6 +2,7 @@ const prisma = require("@prisma/client");
 const jwt = require("jsonwebtoken");
 const db = new prisma.PrismaClient();
 const dotenv = require("dotenv");
+const md5 = require("md5");
 
 dotenv.config();
 
@@ -10,7 +11,7 @@ module.exports = {
     const data = await db.user.findUnique({
       where: {
         email,
-        password,
+        password: md5(password),
       },
       select: {
         id: true,

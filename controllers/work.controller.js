@@ -59,25 +59,12 @@ module.exports = {
       res.status(400).json({ message: error.message });
     }
   },
-  acceptWork: async (req, res) => {
-    const user = req.user;
-    const { id } = req.params;
-    const data = await workService.acceptWork(id, user);
-
-    res.status(200).json(data);
-  },
-  declineWork: async (req, res) => {
-    const user = req.user;
-    const { id } = req.params;
-    const data = await workService.declineWork(id, user);
-    res.status(200).json(data);
-  },
   addMember: async (req, res) => {
     const { userId } = req.body;
     const { id: workId } = req.params;
     const user = req.user;
     try {
-      await workService.addMemberToWork(workId, userId, user);
+      await workService.addMemberToWork(workId, userId);
       if (userId !== user.id) {
         await notificationService.createNotification(
           user.id,

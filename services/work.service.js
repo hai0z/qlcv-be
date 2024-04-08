@@ -7,6 +7,7 @@ const selectUserFields = {
   name: true,
   avatar: true,
   role: true,
+  email: true,
 };
 
 const commentCondition = {
@@ -21,11 +22,6 @@ const commentCondition = {
 };
 
 const implementerCondition = {
-  where: {
-    accepted: {
-      not: "DECLINED",
-    },
-  },
   include: {
     request: {
       orderBy: {
@@ -52,11 +48,6 @@ const implementerWhere = (user) => ({
             {
               userId: user.id,
             },
-            {
-              accepted: {
-                not: "DECLINED",
-              },
-            },
           ],
         },
       },
@@ -70,8 +61,6 @@ const implementerWhere = (user) => ({
 module.exports.writeWorkLog = async (userId, workId, type) => {
   const getLogType = () => {
     switch (type) {
-      case "ACCEPTED_WORK":
-        return "chấp nhận công việc";
       case "ADD_WORK_REQUEST":
         return "thêm yêu cầu cho công việc";
       case "ADD_MEMBER":
@@ -80,8 +69,6 @@ module.exports.writeWorkLog = async (userId, workId, type) => {
         return "thêm 1 bình luận";
       case "CREATED_WORK":
         return "tạo mới 1 công việc";
-      case "DECLINED_WORK":
-        return "từ chối công việc";
       case "PAUSED_WORK":
         return "chuyển trạng thái công việc sang tạm dừng";
       case "COMPLETED_WORK":
@@ -352,29 +339,7 @@ module.exports.workService = {
     }
   },
 
-  acceptWork: async (workId, userId) => {
-    await db.workImplementer.updateMany({
-      where: {
-        userId,
-        workId,
-      },
-      data: {
-        accepted: "ACCEPTED",
-      },
-    });
-    this.writeWorkLog(userId, workId, "ACCEPTED_WORK");
-  },
-
-  declineWork: async (workId, userId) => {
-    await db.workImplementer.deleteMany({
-      where: {
-        userId,
-        workId,
-      },
-    });
-    this.writeWorkLog(userId, workId, "DECLINED_WORK");
-  },
-  addMemberToWork: async (workId, userId, user) => {
+  addMemberToWork: async (workId, userId) => {
     try {
       const work = await db.work.findUnique({
         where: {
@@ -388,7 +353,6 @@ module.exports.workService = {
         data: {
           userId,
           workId,
-          accepted: user.id === userId ? "ACCEPTED" : "PENDING",
         },
       });
     } catch (error) {

@@ -13,8 +13,6 @@ router.get("/chart/:userId", workController.getProgressChart);
 router.get("/:id", workController.getWorkById);
 
 //POST
-router.post("/accepted-work/:id", workController.acceptWork);
-router.post("/decline-work/:id", workController.declineWork);
 router.post("/add-member/:id", workController.addMember);
 router.post("/create-work-request/:id", workController.createWorkRequest);
 router.post("/", workController.createWork);

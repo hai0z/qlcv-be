@@ -2,6 +2,8 @@ const { PrismaClient } = require("@prisma/client");
 
 const db = new PrismaClient();
 
+const md5 = require("md5");
+
 module.exports = {
   getUsers: async () => {
     try {
@@ -50,7 +52,7 @@ module.exports = {
     }
   },
   createUser: async (data) => {
-    const { email, phone } = data;
+    const { email, phone, password } = data;
     try {
       const checkEmail = await db.user.findUnique({
         where: {
@@ -71,6 +73,7 @@ module.exports = {
       const user = await db.user.create({
         data: {
           ...data,
+          password: md5(password),
         },
       });
       return user;
@@ -87,6 +90,58 @@ module.exports = {
         },
         data: {
           ...other,
+        },
+      });
+      return user;
+    } catch (error) {
+      throw new Error(error.message);
+    }
+  },
+  deleteUser: async (userId) => {
+    try {
+      const user = await db.user.delete({
+        where: {
+          id: userId,
+        },
+      });
+
+      return user;
+    } catch (error) {
+      throw new Error(error.message);
+    }
+  },
+  changePassword: async (userId, currentPassword, newPassword) => {
+    try {
+      const user = await db.user.findUnique({
+        where: {
+          id: userId,
+          password: md5(currentPassword),
+        },
+      });
+      if (!user) {
+        throw new Error("Mật khẩu hiện tại không đúng");
+      }
+      await db.user.update({
+        where: {
+          id: userId,
+        },
+        data: {
+          password: md5(newPassword),
+        },
+      });
+      return user;
+    } catch (error) {
+      throw new Error(error.message);
+    }
+  },
+  resetPassword: async (userId) => {
+    try {
+      const user = await db.user.update({
+        where: {
+          id: userId,
+        },
+        data: {
+          password: md5("1111"),
         },
       });
       return user;
