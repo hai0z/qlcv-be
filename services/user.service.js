@@ -52,7 +52,7 @@ module.exports = {
     }
   },
   createUser: async (data) => {
-    const { email, phone, password } = data;
+    const { email, phone } = data;
     try {
       const checkEmail = await db.user.findUnique({
         where: {
@@ -73,7 +73,7 @@ module.exports = {
       const user = await db.user.create({
         data: {
           ...data,
-          password: md5(1111),
+          password: md5("1111"),
         },
       });
       return user;
