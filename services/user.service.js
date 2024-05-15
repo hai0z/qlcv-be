@@ -73,7 +73,7 @@ module.exports = {
       const user = await db.user.create({
         data: {
           ...data,
-          password: md5(password),
+          password: md5(1111),
         },
       });
       return user;
