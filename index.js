@@ -37,6 +37,8 @@ app.use("/user", authMiddleware, require("./routes/user.route"));
 
 app.use("/stats", authMiddleware, require("./routes/stats.route"));
 
+app.use("/search", authMiddleware, require("./routes/search.route"));
+
 app.listen(3000, () => {
   console.log("server is running on http://localhost:3000");
 });

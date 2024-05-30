@@ -4,53 +4,30 @@ const db = new prisma.PrismaClient();
 
 module.exports = {
   getAllNotification: async (user) => {
-    if (user.role === "ADMIN") {
-      const data = await db.notification.findMany({
-        orderBy: {
-          timestamp: "desc",
-        },
-        include: {
-          sender: {
-            select: {
-              name: true,
-              avatar: true,
-            },
-          },
-          receiver: {
-            select: {
-              name: true,
-              avatar: true,
-            },
+    const data = await db.notification.findMany({
+      where: {
+        receiverId: user.id,
+      },
+      orderBy: {
+        timestamp: "desc",
+      },
+      include: {
+        sender: {
+          select: {
+            name: true,
+            avatar: true,
           },
         },
-      });
-      return data;
-    } else {
-      const data = await db.notification.findMany({
-        where: {
-          receiverId: user.id,
-        },
-        orderBy: {
-          timestamp: "desc",
-        },
-        include: {
-          sender: {
-            select: {
-              name: true,
-              avatar: true,
-            },
-          },
-          receiver: {
-            select: {
-              name: true,
-              avatar: true,
-            },
+        receiver: {
+          select: {
+            name: true,
+            avatar: true,
           },
         },
-        take: 20,
-      });
-      return data;
-    }
+      },
+      take: 20,
+    });
+    return data;
   },
   createNotification: async (senderId, receiverId, workId, message) => {
     try {

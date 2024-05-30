@@ -242,7 +242,6 @@ module.exports.workService = {
       completed: data.filter((work) => work.status === "COMPLETED").length,
       pause: data.filter((work) => work.status === "PAUSE").length,
       pending: data.filter((work) => work.status === "PENDING").length,
-      new: data.filter((work) => work.status === "NEW").length,
     });
 
     if (user.role === "ADMIN") {

@@ -41,6 +41,8 @@ model Comment {
   userId    String   @db.ObjectId
   Work      Work?    @relation(fields: [workId], references: [id])
   workId    String?  @db.ObjectId
+
+  @@map("comments")
 }
 
 model WorkImplementer {
@@ -50,6 +52,8 @@ model WorkImplementer {
   request WorkRequest[]
   Work    Work?         @relation(fields: [workId], references: [id])
   workId  String?       @db.ObjectId
+
+  @@map("work_implementers")
 }
 
 model Work {
@@ -60,10 +64,9 @@ model Work {
   createdBy   User              @relation(fields: [userId], references: [id])
   userId      String            @db.ObjectId
   comments    Comment[]
-  status      WorkStatus        @default(NEW)
+  status      WorkStatus        @default(IN_PROGRESS)
   startTime   DateTime
   endTime     DateTime
-  views       Int               @default(0)
   implementer WorkImplementer[]
   WorkLog     WorkLog[]
 
@@ -80,6 +83,8 @@ model WorkRequest {
   userId            String           @db.ObjectId
   WorkImplementer   WorkImplementer? @relation(fields: [workImplementerId], references: [id])
   workImplementerId String?          @db.ObjectId
+
+  @@map("work_requests")
 }
 
 model WorkLog {
@@ -92,7 +97,7 @@ model WorkLog {
   userId    String?  @db.ObjectId
   user      User?    @relation(fields: [userId], references: [id])
 
-  @@map("work_log")
+  @@map("work_logs")
 }
 
 model Notification {
@@ -105,12 +110,13 @@ model Notification {
   sender          User     @relation("SenderToNotification", fields: [senderId], references: [id])
   workId          String?
   isRead          Boolean  @default(false)
+
+  @@map("notifications")
 }
 
 enum WorkStatus {
   IN_PROGRESS
   COMPLETED
-  NEW
   PAUSE
   PENDING
 }
